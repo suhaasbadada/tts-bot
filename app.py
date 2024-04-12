@@ -1,26 +1,31 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_file
 from gtts import gTTS
+from io import BytesIO
 
 app = Flask(__name__)
 
-@app.route("/", methods=["GET", "POST"])
-def speak():
+@app.route("/api/speak/gtts", methods=["POST"])
+def speak_gtts():
     if request.method == "POST":
-        text = request.form["text"]
-        # Convert text to speech using gTTS
-        tts = gTTS(text=text, lang="en")
         try:
-            # Option 1 (preferred): Use get_bytes if available (updated gTTS)
-            audio_data = tts.get_bytes()
-            with open("temp.mp3", "wb") as f:
-                f.write(audio_data)
-        except AttributeError:
-            # Option 2 (fallback): Use save method for older gTTS versions
-            tts.save("temp.mp3")
-        # Display success message with optional audio download link
-        return f"Text converted to speech: {text} <br> <a href='/temp.mp3'>Download Audio</a>"
-    else:
-        return render_template("index.html")
+            text = request.json["text"]
+        except KeyError:
+            return "Missing 'text' key in request body", 400
+
+        tts = gTTS(text=text, lang="en") # text to speech using gTTS
+
+        # storing audio in memory
+        audio_bytes = BytesIO()
+        tts.write_to_fp(audio_bytes)
+        audio_bytes.seek(0)
+
+        # returning audio file
+        return send_file(
+            audio_bytes,
+            download_name="gtts_speech.mp3",
+            mimetype="audio/mp3",
+            as_attachment=True
+        )
 
 if __name__ == "__main__":
     app.run(debug=True)
