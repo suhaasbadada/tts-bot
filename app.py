@@ -1,8 +1,6 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, request, send_file
 from gtts import gTTS
 from io import BytesIO
-from utils import apply_time_stretching
-
 app = Flask(__name__)
 
 @app.route("/api/speak/gtts", methods=["POST"])
@@ -20,7 +18,6 @@ def speak_gtts():
         tts.write_to_fp(audio_bytes)
         audio_bytes.seek(0)
 
-        # faster_file=apply_time_stretching(audio_bytes.read(),1.5)
         # returning audio file
         return send_file(
             audio_bytes,
